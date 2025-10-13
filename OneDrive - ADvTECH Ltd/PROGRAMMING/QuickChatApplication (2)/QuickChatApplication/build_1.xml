@@ -1,0 +1,80 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="QuickChatApplication" default="help" basedir=".">
+    <property name="src.dir" value="src"/>
+    <property name="bin.dir" value="build/classes"/>
+    <property name="dist.dir" value="dist"/>
+    <property name="lib.dir" value="lib"/>
+    <property name="junit.console.jar" value="${lib.dir}/junit-platform-console-standalone.jar"/>
+
+    <target name="help">
+        <echo>Available targets: clean, compile, jar, run, get-junit, test</echo>
+    </target>
+
+    <target name="clean">
+        <delete dir="${bin.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <target name="get-junit">
+        <!-- Downloads the JUnit Platform standalone jar into lib/ if missing -->
+        <mkdir dir="${lib.dir}"/>
+        <available file="${junit.console.jar}" property="junit.present"/>
+        <condition property="need.get.junit">
+            <not><isset property="junit.present"/></not>
+        </condition>
+        <echo message="JUnit jar present: ${junit.present}"/>
+        <get dest="${junit.console.jar}"
+             src="https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.9.2/junit-platform-console-standalone-1.9.2.jar"
+             usetimestamp="true"
+             skipIfSameFile="true"
+             verbose="true"
+             ignoreerrors="true"/>
+    </target>
+
+    <target name="compile" depends="get-junit">
+        <mkdir dir="${bin.dir}"/>
+        <javac srcdir="${src.dir}" destdir="${bin.dir}" includeantruntime="false" debug="on">
+            <classpath>
+                <pathelement location="${junit.console.jar}"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="jar" depends="compile">
+        <mkdir dir="${dist.dir}"/>
+        <jar destfile="${dist.dir}/QuickChatApplication.jar" basedir="${bin.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="quickchatapplication.QuickChatApplication"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="run" depends="compile">
+        <java classname="quickchatapplication.QuickChatApplication" fork="true">
+            <classpath>
+                <pathelement location="${bin.dir}"/>
+                <pathelement location="${junit.console.jar}"/>
+            </classpath>
+        </java>
+    </target>
+
+    <target name="test" depends="compile">
+        <!-- Run tests via JUnit Platform Console Launcher -->
+        <condition property="has.junit">
+            <available file="${junit.console.jar}"/>
+        </condition>
+        <fail message="JUnit Platform Console JAR not found in ${lib.dir}. Run 'ant get-junit' or add the jar." unless="has.junit"/>
+
+        <echo message="Running JUnit Platform tests (console jar: ${junit.console.jar})"/>
+
+        <java jar="${junit.console.jar}" fork="true" failonerror="true">
+            <arg value="--class-path"/>
+            <arg path="${bin.dir}"/>
+            <arg value="--scan-class-path"/>
+            <classpath>
+                <pathelement location="${bin.dir}"/>
+            </classpath>
+        </java>
+    </target>
+</project>
